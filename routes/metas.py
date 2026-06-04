@@ -15,8 +15,9 @@ metas_bp = Blueprint(
     "/metas",
     methods=["POST"]
 )
+@jwt_required()
 def crear_meta():
-    usuario_id = 1
+    usuario_id = int(get_jwt_identity())
     data = request.json
 
     print("DATA RECIBIDA:", data)
