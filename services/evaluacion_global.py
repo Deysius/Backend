@@ -1,63 +1,85 @@
 from flask import Blueprint, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.usuario import Usuario
 from models.proyecto import Proyecto
 from models.rol_aplicacion import RolAplicacion
-from models.historico_productividad import HistoricoProductividad
+from models.historico_productividad import HistoricoProductividad  # <-- IMPORTANTE PARA LEER LOS HISTÓRICOS
 
 evaluacion_bp = Blueprint("evaluacion", __name__)
 
 @evaluacion_bp.route("/evaluacion-global", methods=["GET"])
-@jwt_required()  # <--- PROTEGIDO: Solo el usuario logueado puede acceder
 def evaluacion_global():
-    usuario_id = int(get_jwt_identity())
-    usuario = Usuario.query.get(usuario_id)
-    
-    if not usuario:
-        return jsonify({"error": "Usuario no encontrado"}), 404
+    resultado = []
+    usuarios = Usuario.query.all()
+    regles = RolAplicacion.query.all()
 
-    # 1. CALCULAR PRODUCTIVIDAD
-    productividad = 0.0
-    ultimo_historico = HistoricoProductividad.query.filter_by(
-        usuario_id=usuario_id
-    ).order_by(HistoricoProductividad.periodo.desc()).first()
+    for usuario in usuarios:
+        productividad = 0
 
-    if ultimo_historico:
-        productividad = ultimo_historico.indice_productividad
-    else:
-        # Respaldo con actividades si no hay históricos
-        regles = RolAplicacion.query.all()
-        total_general = sum(a.tiempo_activo for a in usuario.actividades)
-        total_productivo = sum(
-            a.tiempo_activo for a in usuario.actividades 
-            for r in regles if r.rol_id == usuario.rol_id and r.aplicacion_id == a.aplicacion_id and r.es_productiva
-        )
-        if total_general > 0:
-            productividad = (total_productivo / total_general) * 100
+        # ============================================================
+        # 1. CALCULAR PRODUCTIVIDAD USANDO EL ÚLTIMO HISTÓRICO
+        # ============================================================
+        # Buscamos el histórico más reciente (ordenado de forma descendente por periodo)
+        ultimo_historico = HistoricoProductividad.query.filter_by(
+            usuario_id=usuario.id
+        ).order_by(HistoricoProductividad.periodo.desc()).first()
 
-    # 2. CALCULAR AVANCE DE PROYECTOS
-    proyectos = Proyecto.query.filter_by(usuario_id=usuario_id).all()
-    suma_avances = 0
-    if proyectos:
-        for p in proyectos:
-            horas_reales = sum(a.horas_trabajadas for a in p.avances)
-            porcentaje_proy = (horas_reales / p.horas_estimadas * 100) if p.horas_estimadas > 0 else 0
-            suma_avances += min(porcentaje_proy, 100)
-        avance_promedio = suma_avances / len(proyectos)
-    else:
+        if ultimo_historico:
+            # Si el usuario tiene históricos (como tu nuevo registro de 10%), toma ese valor directo
+            productividad = ultimo_historico.indice_productividad
+        else:
+            # BLINDAJE: Si es un usuario nuevo sin históricos, calcula usando actividades en vivo como respaldo
+            total_general = 0
+            total_productivo = 0
+            for actividad in usuario.actividades:
+                for regla in regles:
+                    if (regla.rol_id == usuario.rol_id and regla.aplicacion_id == actividad.aplicacion_id):
+                        total_general += actividad.tiempo_activo
+                        if regla.es_productiva:
+                            total_productivo += actividad.tiempo_activo
+            if total_general > 0:
+                productividad = (total_productivo / total_general) * 100
+
+        # ============================================================
+        # 2. CALCULAR AVANCE DE PROYECTOS
+        # ============================================================
         avance_promedio = 0
+        proyectos = Proyecto.query.filter_by(usuario_id=usuario.id).all()
 
-    # 3. DETERMINAR CONCLUSIÓN
-    nota_global = (productividad + avance_promedio) / 2
-    
-    if nota_global >= 85: conclusion = "Excelente desempeño general"
-    elif nota_global >= 70: conclusion = "Rendimiento altamente eficiente"
-    elif nota_global >= 50: conclusion = "Rendimiento equilibrado"
-    else: conclusion = "Alerta: Requiere optimización urgente de procesos"
+        if proyectos:
+            suma_avances = 0
+            for proyecto in proyectos:
+                horas_reales = 0
+                for avance in proyecto.avances:
+                    horas_reales += avance.horas_trabajadas
 
-    return jsonify({
-        "usuario": usuario.nombre,
-        "productividad": round(productividad, 2),
-        "avance_proyectos": round(avance_promedio, 2),
-        "conclusion": conclusion
-    })
+                if proyecto.horas_estimadas > 0:
+                    porcentaje_proy = (horas_reales / proyecto.horas_estimadas) * 100
+                    suma_avances += min(porcentaje_proy, 100)
+
+            avance_promedio = suma_avances / len(proyectos)
+
+        # ============================================================
+        # 3. DETERMINAR CONCLUSIÓN
+        # ============================================================
+      # ============================================================
+        # 3. DETERMINAR CONCLUSIÓN (Optimizado por Rangos Globales)
+        # ============================================================
+        # Sacamos el promedio real de tu rendimiento
+        nota_global = (productividad + avance_promedio) / 2
+        
+        if nota_global >= 85:
+            conclusion = "Excelente desempeño general"
+        elif nota_global >= 70:
+            conclusion = "Rendimiento altamente eficiente"
+        elif nota_global >= 50:
+            conclusion = "Rendimiento equilibrado"
+        else:
+            conclusion = "Alerta: Requiere optimización urgente de procesos"
+        resultado.append({
+            "usuario": usuario.nombre,
+            "productividad": round(productividad, 2),
+            "avance_proyectos": round(avance_promedio, 2),
+            "conclusion": conclusion
+        })
+
+    return jsonify(resultado)
