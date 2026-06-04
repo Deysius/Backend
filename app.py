@@ -48,12 +48,7 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=8)
 jwt = JWTManager(app)
 
 # CORS
-CORS(
-    app,
-    origins=[
-        "https://tu-frontend.onrender.com"
-    ]
-)
+CORS(app)
 
 # Bcrypt
 bcrypt.init_app(app)
