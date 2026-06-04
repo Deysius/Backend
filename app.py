@@ -98,17 +98,10 @@ app.register_blueprint(
 # CONFIGURACIÓN BASE DE DATOS
 import os
 
-# Render inyectará automáticamente una variable llamada DATABASE_URL
-db_uri = os.environ.get('DATABASE_URL', 'sqlite:///timewise.db')
-
-# Si la URL viene de Render (Postgres), a veces empieza por 'postgres://', 
-# pero SQLAlchemy requiere 'postgresql://'.
-if db_uri.startswith("postgres://"):
-    db_uri = db_uri.replace("postgres://", "postgresql://", 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
-
-
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///timewise.db"
+)
 # INICIALIZAR DB
 
 db.init_app(app)
