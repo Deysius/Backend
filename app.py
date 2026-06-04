@@ -118,39 +118,38 @@ with app.app_context():
         db.session.add(empleado_rol)
         db.session.commit()
 
-    # Usuario administrador
-    # Usuario administrador
-admin = Usuario.query.filter_by(
-    correo="admin@timewise.com"
-).first()
+    # Usuario Administrador
+    admin = Usuario.query.filter_by(
+        correo="admin@timewise.com"
+    ).first()
 
-if not admin:
+    if not admin:
 
-    password_hash = bcrypt.generate_password_hash(
-        "admin123"
-    ).decode("utf-8")
+        password_hash = bcrypt.generate_password_hash(
+            "admin123"
+        ).decode("utf-8")
 
-    admin = Usuario(
-        nombre="Administrador",
-        correo="admin@timewise.com",
-        password_hash=password_hash,
-        rol_id=admin_rol.id
-    )
+        admin = Usuario(
+            nombre="Administrador",
+            correo="admin@timewise.com",
+            password_hash=password_hash,
+            rol_id=admin_rol.id
+        )
 
-    db.session.add(admin)
-    db.session.commit()
+        db.session.add(admin)
+        db.session.commit()
 
-    print("Administrador creado correctamente")
-
+        print("Administrador creado correctamente")
 @app.route("/")
 def home():
     return {
         "message": "Backend funcionando"
     }
 
+
 if __name__ == "__main__":
     app.run(debug=True)
-
+    
 @app.route("/crear-admin")
 def crear_admin():
 
