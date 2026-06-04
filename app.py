@@ -119,23 +119,28 @@ with app.app_context():
         db.session.commit()
 
     # Usuario administrador
-    admin = Usuario.query.filter_by(
-        correo="admin@timewise.com"
-    ).first()
+    # Usuario administrador
+admin = Usuario.query.filter_by(
+    correo="admin@timewise.com"
+).first()
 
-    if not admin:
+if not admin:
 
-        admin = Usuario(
-            nombre="Administrador",
-            correo="admin@timewise.com",
-            password=bcrypt.generate_password_hash(
-                "admin123"
-            ).decode("utf-8"),
-            rol_id=admin_rol.id
-        )
+    password_hash = bcrypt.generate_password_hash(
+        "admin123"
+    ).decode("utf-8")
 
-        db.session.add(admin)
-        db.session.commit()
+    admin = Usuario(
+        nombre="Administrador",
+        correo="admin@timewise.com",
+        password_hash=password_hash,
+        rol_id=admin_rol.id
+    )
+
+    db.session.add(admin)
+    db.session.commit()
+
+    print("Administrador creado correctamente")
 
 @app.route("/")
 def home():
@@ -145,3 +150,37 @@ def home():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+@app.route("/crear-admin")
+def crear_admin():
+
+    admin = Usuario.query.filter_by(
+        correo="admin@timewise.com"
+    ).first()
+
+    if admin:
+        return {
+            "mensaje": "El administrador ya existe"
+        }
+
+    admin_rol = Rol.query.filter_by(
+        nombre="Administrador"
+    ).first()
+
+    password_hash = bcrypt.generate_password_hash(
+        "admin123"
+    ).decode("utf-8")
+
+    admin = Usuario(
+        nombre="Administrador",
+        correo="admin@timewise.com",
+        password_hash=password_hash,
+        rol_id=admin_rol.id
+    )
+
+    db.session.add(admin)
+    db.session.commit()
+
+    return {
+        "mensaje": "Administrador creado"
+    }
