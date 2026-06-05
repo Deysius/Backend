@@ -255,18 +255,14 @@ def actualizar_usuario(id):
         "mensaje": "Usuario actualizado"
     }, 200
 
-
-# 1. ASEGÚRATE DE IMPORTAR EL MODELO AL INICIO DEL ARCHIVO (o como se llame exactamente tu clase en Python)
-# Si tu clase de plan de mejora está en otro archivo, búscala e impórtala. Asumiré que está en models.plan_mejora:
 try:
     from models.plan_mejora import PlanMejora
 except ImportError:
-    # Si la tienes declarada en otra parte o en el mismo archivo del modelo, ajusta la importación.
-    # Por ejemplo, si está en 'models.planes_mejora', cámbialo aquí abajo:
+    
     from models.planes_mejora import PlanMejora 
 
 
-# 2. REEMPLAZA LA FUNCIÓN DE ELIMINAR POR ESTA VERSIÓN CON EL FILTRO EXTRA:
+
 @usuarios_bp.route(
     "/usuarios/<int:id>", 
     methods=["DELETE"]
@@ -285,25 +281,22 @@ def eliminar_usuario(id):
         }, 404
 
     try:
-        # [NUEVO] 🔥 Primero eliminamos los planes de mejora para que no lancen el error NOT NULL
-        # Nota: Si tu modelo de SQLAlchemy se llama diferente a 'PlanMejora', cambia el nombre de la clase aquí.
+        
         PlanMejora.query.filter_by(usuario_id=id).delete()
 
-        # 1. Eliminar históricos del usuario
+   
         HistoricoProductividad.query.filter_by(usuario_id=id).delete()
 
-        # 2. Eliminar actividades del usuario
+   
         RegistroActividad.query.filter_by(usuario_id=id).delete()
 
-        # 3. Eliminar los avances de los proyectos que le pertenecen al usuario
         proyectos_usuario = Proyecto.query.filter_by(usuario_id=id).all()
         for proyecto in proyectos_usuario:
             AvanceProyecto.query.filter_by(proyecto_id=proyecto.id).delete()
 
-        # 4. Eliminar los proyectos del usuario
         Proyecto.query.filter_by(usuario_id=id).delete()
 
-        # 5. Finalmente, removemos al usuario de la sesión y aplicamos cambios
+        
         db.session.delete(usuario)
         db.session.commit()
 
@@ -321,7 +314,7 @@ def eliminar_usuario(id):
 
 @usuarios_bp.route(
     "/debug-token",
-    methods=["GET"]
+    methods=["GET"] 
 )
 @jwt_required()
 def debug_token():

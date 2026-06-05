@@ -15,7 +15,7 @@ def uso_aplicaciones():
         improductivas = 0
 
         for actividad in usuario.actividades:
-            # Buscamos si la aplicación de esta actividad tiene regla para el rol del usuario
+         
             for regla in reglas:
                 if (regla.rol_id == usuario.rol_id and regla.aplicacion_id == actividad.aplicacion_id):
                     if regla.es_productiva:
@@ -25,8 +25,8 @@ def uso_aplicaciones():
 
         resultado.append({
             "usuario": usuario.nombre,
-            "horas_productivas": productivas,   # Representa los minutos acumulados reales
-            "horas_improductivas": improductivas # Representa los minutos acumulados reales
+            "horas_productivas": productivas,   
+            "horas_improductivas": improductivas 
         })
 
     return jsonify(resultado)

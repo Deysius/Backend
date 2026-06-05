@@ -5,9 +5,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 metas_bp = Blueprint("metas", __name__)
 
-# ============================================================
-# 1. CREAR META
-# ============================================================
+
 @metas_bp.route("/metas", methods=["POST"])
 @jwt_required()
 def crear_meta():
@@ -34,9 +32,7 @@ def crear_meta():
     return jsonify({"message": "Meta creada correctamente"}), 201
 
 
-# ============================================================
-# 2. OBTENER METAS (SOLO DEL USUARIO LOGUEADO)
-# ============================================================
+
 @metas_bp.route("/metas", methods=["GET"])
 @jwt_required()
 def obtener_metas():
@@ -46,7 +42,7 @@ def obtener_metas():
     resultado = []
     for meta in metas:
         progreso_actual = meta.progreso or 0.0
-        # Evitar división por cero
+  
         porcentaje = (progreso_actual / meta.objetivo * 100) if meta.objetivo > 0 else 0
         
         resultado.append({
@@ -60,10 +56,6 @@ def obtener_metas():
 
     return jsonify(resultado)
 
-
-# ============================================================
-# 3. ACTUALIZAR PROGRESO (PROTEGIDO)
-# ============================================================
 @metas_bp.route("/metas/<int:meta_id>/progreso", methods=["PUT"])
 @jwt_required()
 def actualizar_progreso_meta(meta_id):
@@ -74,13 +66,12 @@ def actualizar_progreso_meta(meta_id):
     if progreso_a_sumar is None:
         return jsonify({"error": "El valor de progreso es obligatorio"}), 400
 
-    # Buscamos la meta asegurando que pertenezca al usuario logueado
+    
     meta = Meta.query.filter_by(id=meta_id, usuario_id=usuario_id).first()
 
     if not meta:
         return jsonify({"error": "Meta no encontrada o no autorizada"}), 404
 
-    # Actualizar progreso
     meta.progreso = (meta.progreso or 0.0) + float(progreso_a_sumar)
     
     # Límite

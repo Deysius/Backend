@@ -2,8 +2,7 @@ from flask import Blueprint, jsonify
 from models.usuario import Usuario
 from models.proyecto import Proyecto
 from models.rol_aplicacion import RolAplicacion
-from models.historico_productividad import HistoricoProductividad  # <-- IMPORTANTE PARA LEER LOS HISTÓRICOS
-
+from models.historico_productividad import HistoricoProductividad  
 evaluacion_bp = Blueprint("evaluacion", __name__)
 
 @evaluacion_bp.route("/evaluacion-global", methods=["GET"])
@@ -15,19 +14,16 @@ def evaluacion_global():
     for usuario in usuarios:
         productividad = 0
 
-        # ============================================================
-        # 1. CALCULAR PRODUCTIVIDAD USANDO EL ÚLTIMO HISTÓRICO
-        # ============================================================
-        # Buscamos el histórico más reciente (ordenado de forma descendente por periodo)
+    
         ultimo_historico = HistoricoProductividad.query.filter_by(
             usuario_id=usuario.id
         ).order_by(HistoricoProductividad.periodo.desc()).first()
 
         if ultimo_historico:
-            # Si el usuario tiene históricos (como tu nuevo registro de 10%), toma ese valor directo
+           
             productividad = ultimo_historico.indice_productividad
         else:
-            # BLINDAJE: Si es un usuario nuevo sin históricos, calcula usando actividades en vivo como respaldo
+        
             total_general = 0
             total_productivo = 0
             for actividad in usuario.actividades:
@@ -38,10 +34,10 @@ def evaluacion_global():
                             total_productivo += actividad.tiempo_activo
             if total_general > 0:
                 productividad = (total_productivo / total_general) * 100
+                
+                
 
-        # ============================================================
-        # 2. CALCULAR AVANCE DE PROYECTOS
-        # ============================================================
+     
         avance_promedio = 0
         proyectos = Proyecto.query.filter_by(usuario_id=usuario.id).all()
 
@@ -55,16 +51,11 @@ def evaluacion_global():
                 if proyecto.horas_estimadas > 0:
                     porcentaje_proy = (horas_reales / proyecto.horas_estimadas) * 100
                     suma_avances += min(porcentaje_proy, 100)
+                    
 
             avance_promedio = suma_avances / len(proyectos)
 
-        # ============================================================
-        # 3. DETERMINAR CONCLUSIÓN
-        # ============================================================
-      # ============================================================
-        # 3. DETERMINAR CONCLUSIÓN (Optimizado por Rangos Globales)
-        # ============================================================
-        # Sacamos el promedio real de tu rendimiento
+ 
         nota_global = (productividad + avance_promedio) / 2
         
         if nota_global >= 85:

@@ -19,7 +19,6 @@ def generar_plan():
 
     recomendaciones = []
 
-    # 1. EVALUACIÓN DE HISTÓRICOS
     historicos = HistoricoProductividad.query.filter_by(usuario_id=usuario_id).order_by(HistoricoProductividad.periodo.asc()).all()
     if len(historicos) >= 2:
         ultimo, anterior = historicos[-1], historicos[-2]
@@ -28,17 +27,17 @@ def generar_plan():
     elif len(historicos) == 1:
         recomendaciones.append("Tienes un registro de productividad inicial. ¡Sigue trabajando para ver tu evolución!")
 
-    # 2. EVALUACIÓN DE PROYECTOS
+   
     proyectos = Proyecto.query.filter_by(usuario_id=usuario_id).all()
     for p in proyectos:
         horas_reales = sum([a.horas_trabajadas for a in p.avances]) if p.avances else 0
-        # Aumentamos el umbral al 80% para que sea más fácil recibir consejos de progreso
+       
         if horas_reales < (p.horas_estimadas * 0.8):
             recomendaciones.append(f"Proyecto '{p.nombre}': Llevas {horas_reales}h de {p.horas_estimadas}h. ¡Mantén el enfoque!")
         else:
             recomendaciones.append(f"¡Buen avance en el proyecto '{p.nombre}'! Estás cerca de la meta.")
 
-    # 3. EVALUACIÓN DE METAS
+
     metas = Meta.query.filter_by(usuario_id=usuario_id).all()
     if metas:
         for m in metas:
@@ -50,7 +49,7 @@ def generar_plan():
     else:
         recomendaciones.append("Aún no tienes metas configuradas. Crea algunas para medir mejor tu éxito.")
 
-    # 4. SINCRONIZACIÓN
+   
     PlanMejora.query.filter_by(usuario_id=usuario_id).delete()
     for rec in recomendaciones:
         db.session.add(PlanMejora(recomendacion=rec, estado="Pendiente", usuario_id=usuario_id))
