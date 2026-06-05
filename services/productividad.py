@@ -7,7 +7,7 @@ from models.historico_productividad import HistoricoProductividad
 from models.proyecto import Proyecto
 from routes.proyectos import proyectos_bp
 from models.proyecto import Proyecto
-from service.proyectos_analisis import analisis_proyecto_bp
+
 from routes.proyectos import proyectos_bp
 from models.proyecto import Proyecto 
 productividad_bp = Blueprint(
